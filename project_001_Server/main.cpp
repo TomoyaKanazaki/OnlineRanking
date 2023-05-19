@@ -23,6 +23,7 @@ void Init(WSADATA *wsaData, SOCKET *sock); //初期化処理
 void Uninit(SOCKET *sockServer, SOCKET *sock); //終了処理
 SOCKET SetAddress(SOCKET sock); //接続処理
 void Transceiving(SOCKET sockServer); //送受信処理
+int GetOrder(const int nScore); //順位取得処理
 
 //==========================================
 //  メイン関数
@@ -144,11 +145,115 @@ void Transceiving(SOCKET sockServer)
 
 	printf("受信した数値 >> %d\n", nData);
 
+	//今回の順位を取得する
+	nData = GetOrder(nData);
+
 	//データの送信
-	nData *= 2;
 	char aData[4];
 	memcpy(&aData[0], &nData, sizeof(int));
 	send(sockServer, &aData[0], sizeof(int), 0);
 
 	printf("送信した数値 >> %d\n", nData);
+}
+
+//==========================================
+//  順位取得処理
+//==========================================
+int GetOrder(const int nScore)
+{
+	//ローカル変数宣言
+	FILE *pFile;
+	int nOrder = 0; //順位
+	int nNumData = 0; //使用するデータ数
+	int *apRanking = NULL;
+
+	//ファイルを開く
+	pFile = fopen("Ranking.bin", "rb");
+
+	//NULLチェック
+	if (pFile != NULL)
+	{
+		//保存されているデータ数を取得する
+		fread(&nNumData, sizeof(int), 1, pFile);
+
+		//(保存されているデータ数 + 1) * 4バイトのメモリを確保する
+		if (apRanking == NULL)
+		{
+			apRanking = new int[nNumData + 1];
+		}
+		else
+		{
+			printf("ランキングデータ用のメモリが確保できませんでした\n");
+		}
+
+		//メモリを確保したら保存されているデータを取得する
+		if (apRanking != NULL)
+		{
+			fread(apRanking, sizeof(int), nNumData, pFile);
+		}
+
+		//ファイルを閉じる
+		fclose(pFile);
+	}
+	else
+	{
+		printf("ランキングデータの読み込みに失敗\n");
+	}
+
+	//NULLチェック
+	if (apRanking != NULL)
+	{
+		//最後のメモリに受信したデータを保存する
+		apRanking[nNumData] = nScore;
+
+		//保存されているデータ数の1増やす
+		nNumData++;
+
+		//ランキングデータをソートする
+
+
+		//受信したスコアの順位を取得する
+		for (int nCnt = 0; nCnt < nNumData; nCnt++)
+		{
+			if (apRanking[nCnt] == nScore)
+			{
+				nOrder = nCnt + 1;
+				break;
+			}
+		}
+	}
+
+	//ファイルを開く
+	pFile = fopen("Ranking.bin", "wb");
+
+	//NULLチェック
+	if (pFile != NULL)
+	{
+		//NULLチェック
+		if (apRanking != NULL)
+		{
+			//保存するデータ数を保存する
+			fwrite(&nNumData, sizeof(int), 1, pFile);
+
+			//ランキングを保存する
+			fwrite(apRanking, sizeof(int), nNumData, pFile);
+
+			//ファイルを閉じる
+			fclose(pFile);
+		}
+	}
+	else
+	{
+		printf("ランキングデータの書き出しに失敗\n");
+	}
+
+	//メモリを開放する
+	if (apRanking != NULL)
+	{
+		delete[] apRanking;
+		apRanking = NULL;
+	}
+
+	//順位を返す
+	return nOrder;
 }
