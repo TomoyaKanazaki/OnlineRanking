@@ -23,6 +23,7 @@ void Init(WSADATA *wsaData, SOCKET *sock); //初期化処理
 void Uninit(SOCKET *sockClient); //終了処理
 struct sockaddr_in SetAddress(SOCKET sockClient); //接続処理
 void Transceiving(SOCKET sockClient); //送受信処理
+char *GetIPAdddress(void); //IPアドレス取得処理
 
 //==========================================
 //  メイン関数
@@ -112,7 +113,7 @@ struct sockaddr_in SetAddress(SOCKET sockClient)
 {
 	//ローカル変数宣言
 	struct sockaddr_in addr;
-	const char *pIPAddress = "127.0.0.1";
+	const char *pIPAddress = GetIPAdddress();
 
 	//接続先の設定
 	addr.sin_family = AF_INET;
@@ -164,4 +165,44 @@ void Transceiving(SOCKET sockClient)
 	memcpy(&nData, &aRecvData[0], sizeof(int));
 
 	printf("受信した数値 >> %d\n", nData);
+}
+
+//==========================================
+//  IPアドレス取得処理
+//==========================================
+char *GetIPAdddress(void)
+{
+	//ローカル変数宣言
+	FILE *pFile; //ファイルポインタ
+	char aString[128]; //文字列廃棄用
+	char aIPAddress[128]; //IPアドレスの取得用
+
+	//ファイルを開く
+	pFile = fopen("Address.txt", "r");
+
+	//NULLチェック
+	if (pFile != NULL)
+	{
+		//見出しを取得
+		for(int nCnt = 0; nCnt < 3; nCnt++)
+		{
+			fscanf(pFile, "%s", &aString[0]);
+		}
+
+		//アドレスを取得
+		fscanf(pFile, "%s", &aIPAddress[0]);
+
+		//ファイルを閉じる
+		fclose(pFile);
+
+		//成功表示
+		printf("IPアドレスの取得に成功 >> %s\n", &aIPAddress[0]);
+	}
+	else
+	{
+		printf("IPアドレスの取得に失敗しました");
+	}
+
+	//取得したIPアドレスを返す
+	return &aIPAddress[0];
 }
