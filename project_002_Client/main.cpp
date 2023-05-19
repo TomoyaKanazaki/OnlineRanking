@@ -114,7 +114,7 @@ struct sockaddr_in SetAddress(SOCKET sockClient)
 	//ƒ[ƒJƒ‹•Ï”éŒ¾
 	struct sockaddr_in addr;
 	const char *pIPAddress = GetIPAdddress();
-
+	
 	//Ú‘±æ‚Ìİ’è
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(PORT_NUM);

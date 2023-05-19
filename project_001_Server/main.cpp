@@ -24,6 +24,7 @@ void Uninit(SOCKET *sockServer, SOCKET *sock); //終了処理
 SOCKET SetAddress(SOCKET sock); //接続処理
 void Transceiving(SOCKET sockServer); //送受信処理
 int GetOrder(const int nScore); //順位取得処理
+int Descending(const void * n0, const void * n1); //ソート用
 
 //==========================================
 //  メイン関数
@@ -210,7 +211,7 @@ int GetOrder(const int nScore)
 		nNumData++;
 
 		//ランキングデータをソートする
-
+		qsort(apRanking, nNumData, sizeof(int), Descending);
 
 		//受信したスコアの順位を取得する
 		for (int nCnt = 0; nCnt < nNumData; nCnt++)
@@ -256,4 +257,24 @@ int GetOrder(const int nScore)
 
 	//順位を返す
 	return nOrder;
+}
+
+//==========================================
+//  ソート用
+//==========================================
+int Descending(const void * n0, const void * n1)
+{
+	//n0とn1の値を比較した結果によって返り値を決定する
+	if (*(int *)n0 < *(int *)n1)
+	{
+		return 1;
+	}
+	else if (*(int *)n0 > *(int *)n1)
+	{
+		return -1;
+	}
+	else
+	{
+		return 0;
+	}
 }
