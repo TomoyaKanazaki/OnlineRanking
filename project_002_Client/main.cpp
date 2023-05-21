@@ -21,9 +21,9 @@
 //==========================================
 void Init(WSADATA *wsaData, SOCKET *sock); //初期化処理
 void Uninit(SOCKET *sockClient); //終了処理
-struct sockaddr_in SetAddress(SOCKET sockClient); //接続処理
+void ConnectServer(SOCKET sockClient); //接続処理
 void Transceiving(SOCKET sockClient); //送受信処理
-char *GetIPAdddress(void); //IPアドレス取得処理
+void GetIPAdddress(char *paIpAddress); //IPアドレス取得処理
 
 //==========================================
 //  メイン関数
@@ -32,13 +32,13 @@ int main(void)
 {
 	//ローカル変数宣言
 	WSADATA wsaData; //ソケットの仕様情報
-	SOCKET sockClient; 
+	SOCKET sockClient;
 
 	//初期化処理
 	Init(&wsaData, &sockClient);
 
 	//接続処理
-	struct sockaddr_in addr = SetAddress(sockClient);
+	ConnectServer(sockClient);
 
 	//送受信処理
 	Transceiving(sockClient);
@@ -109,16 +109,17 @@ void Uninit(SOCKET *sockClient)
 //==========================================
 //  接続処理
 //==========================================
-struct sockaddr_in SetAddress(SOCKET sockClient)
+void ConnectServer(SOCKET sockClient)
 {
 	//ローカル変数宣言
 	struct sockaddr_in addr;
-	const char *pIPAddress = GetIPAdddress();
+	char aString[128] = {}; //最初にIPアドレス(文字列)を格納する変数
+	GetIPAdddress(&aString[0]);
 	
 	//接続先の設定
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(PORT_NUM);
-	addr.sin_addr.S_un.S_addr = inet_addr(pIPAddress);
+	addr.sin_addr.S_un.S_addr = inet_addr(&aString[0]);
 
 	//接続する
 	if (connect(sockClient, (struct sockaddr*)&addr, sizeof(addr)) != 0)
@@ -134,9 +135,6 @@ struct sockaddr_in SetAddress(SOCKET sockClient)
 	{
 		printf("<< サーバーへの接続に成功 >>\n");
 	}
-
-	//値を返す
-	return addr;
 }
 
 //==========================================
@@ -170,12 +168,11 @@ void Transceiving(SOCKET sockClient)
 //==========================================
 //  IPアドレス取得処理
 //==========================================
-char *GetIPAdddress(void)
+void GetIPAdddress(char *pString)
 {
 	//ローカル変数宣言
 	FILE *pFile; //ファイルポインタ
 	char aString[128]; //文字列廃棄用
-	char aIPAddress[128]; //IPアドレスの取得用
 
 	//ファイルを開く
 	pFile = fopen("Address.txt", "r");
@@ -190,19 +187,16 @@ char *GetIPAdddress(void)
 		}
 
 		//アドレスを取得
-		fscanf(pFile, "%s", &aIPAddress[0]);
+		fscanf(pFile, "%s", pString);
 
 		//ファイルを閉じる
 		fclose(pFile);
 
 		//成功表示
-		printf("IPアドレスの取得に成功 >> %s\n", &aIPAddress[0]);
+		printf("IPアドレスの取得に成功 >> %s\n", pString);
 	}
 	else
 	{
 		printf("IPアドレスの取得に失敗しました");
 	}
-
-	//取得したIPアドレスを返す
-	return &aIPAddress[0];
 }
