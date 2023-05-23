@@ -5,6 +5,7 @@
 //
 //==========================================
 #include <stdio.h>
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <winsock2.h>
 #include "main.h"
 
@@ -24,6 +25,9 @@ void Uninit(SOCKET *sockServer, SOCKET *sock); //終了処理
 SOCKET SetAddress(SOCKET sock); //接続処理
 void Transceiving(SOCKET sockServer); //送受信処理
 int GetOrder(const int nScore); //順位取得処理
+void LoadData(int *apRanking, int &nNumData);
+void SaveData(int *apRanking, int nNumData);
+void SaveText(int *apRanking, int nNumData);
 int Descending(const void * n0, const void * n1); //ソート用
 
 //==========================================
@@ -162,11 +166,58 @@ void Transceiving(SOCKET sockServer)
 //==========================================
 int GetOrder(const int nScore)
 {
-	//ローカル変数宣言
-	FILE *pFile;
 	int nOrder = 0; //順位
 	int nNumData = 0; //使用するデータ数
 	int *apRanking = NULL;
+
+	//読み込み処理
+	LoadData(apRanking, nNumData);
+
+	//NULLチェック
+	if (apRanking != NULL)
+	{
+		//最後のメモリに受信したデータを保存する
+		apRanking[nNumData] = nScore;
+
+		//保存されているデータ数の1増やす
+		nNumData++;
+
+		//ランキングデータをソートする
+		qsort(apRanking, nNumData, sizeof(int), Descending);
+
+		//受信したスコアの順位を取得する
+		for (int nCnt = 0; nCnt < nNumData; nCnt++)
+		{
+			if (apRanking[nCnt] == nScore)
+			{
+				nOrder = nCnt + 1;
+				break;
+			}
+		}
+	}
+
+	//書き出し処理
+	SaveData(apRanking, nNumData);
+	SaveText(apRanking, nNumData);
+
+	//メモリを開放する
+	if (apRanking != NULL)
+	{
+		delete[] apRanking;
+		apRanking = NULL;
+	}
+
+	//順位を返す
+	return nOrder;
+}
+
+//==========================================
+//  読み込み処理
+//==========================================
+void LoadData(int *apRanking, int &nNumData)
+{
+	//ローカル変数宣言
+	FILE *pFile = NULL;
 
 	//ファイルを開く
 	pFile = fopen("Ranking.bin", "rb");
@@ -200,29 +251,15 @@ int GetOrder(const int nScore)
 	{
 		printf("ランキングデータの読み込みに失敗\n");
 	}
+}
 
-	//NULLチェック
-	if (apRanking != NULL)
-	{
-		//最後のメモリに受信したデータを保存する
-		apRanking[nNumData] = nScore;
-
-		//保存されているデータ数の1増やす
-		nNumData++;
-
-		//ランキングデータをソートする
-		qsort(apRanking, nNumData, sizeof(int), Descending);
-
-		//受信したスコアの順位を取得する
-		for (int nCnt = 0; nCnt < nNumData; nCnt++)
-		{
-			if (apRanking[nCnt] == nScore)
-			{
-				nOrder = nCnt + 1;
-				break;
-			}
-		}
-	}
+//==========================================
+//  書き出し処理
+//==========================================
+void SaveData(int *apRanking, int nNumData)
+{
+	//ローカル変数宣言
+	FILE *pFile = NULL;
 
 	//ファイルを開く
 	pFile = fopen("Ranking.bin", "wb");
@@ -230,33 +267,51 @@ int GetOrder(const int nScore)
 	//NULLチェック
 	if (pFile != NULL)
 	{
-		//NULLチェック
-		if (apRanking != NULL)
-		{
-			//保存するデータ数を保存する
-			fwrite(&nNumData, sizeof(int), 1, pFile);
+		//保存するデータ数を保存する
+		fwrite(&nNumData, sizeof(int), 1, pFile);
 
-			//ランキングを保存する
-			fwrite(apRanking, sizeof(int), nNumData, pFile);
+		//ランキングを保存する
+		fwrite(apRanking, sizeof(int), nNumData, pFile);
 
-			//ファイルを閉じる
-			fclose(pFile);
-		}
+		//ファイルを閉じる
+		fclose(pFile);
 	}
 	else
 	{
 		printf("ランキングデータの書き出しに失敗\n");
 	}
+}
 
-	//メモリを開放する
-	if (apRanking != NULL)
+//==========================================
+//  テキストファイルへの書き出し
+//==========================================
+void SaveText(int *apRanking, int nNumData)
+{
+	//ローカル変数宣言
+	FILE *pFile = NULL;
+
+	//ファイルを開く
+	pFile = fopen("Ranking.txt", "w");
+
+	//NULLチェック
+	if (pFile != NULL)
 	{
-		delete[] apRanking;
-		apRanking = NULL;
-	}
+		//保存数
+		fprintf(pFile, "保存されたデータ数 : %d", nNumData);
 
-	//順位を返す
-	return nOrder;
+		//各スコアの保存
+		for (int nCntData = 0; nCntData < nNumData; nCntData++, apRanking++)
+		{
+			fprintf(pFile, "%d : %d", nCntData + 1, *apRanking);
+		}
+
+		//ファイルを閉じる
+		fclose(pFile);
+	}
+	else
+	{
+		printf("ランキングデータの書き出しに失敗\n");
+	}
 }
 
 //==========================================
